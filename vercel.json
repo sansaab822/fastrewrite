@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/*.js",
+      "src": "api/**/*.js",
       "use": "@vercel/node"
     }
   ],
@@ -17,6 +17,6 @@
     }
   ],
   "env": {
-    "OPENAI_API_KEY": "@openai_api_key"
+    "GEMINI_API_KEY": "@gemini_api_key"
   }
 }
