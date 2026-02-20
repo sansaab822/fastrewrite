@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastNaukriAlert AI Content Rewriter</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .header p { font-size: 1.1rem; opacity: 0.9; }
+
+        .main-content { padding: 40px; }
+
+        .input-group { margin-bottom: 25px; }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea { min-height: 120px; resize: vertical; }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(102, 126, 234, 0.5); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        .loading.active { display: block; }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-box {
+            display: none;
+            margin-top: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid #e9ecef;
+        }
+        .result-box.active { display: block; }
+
+        .result-header {
+            background: #28a745;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-content {
+            padding: 25px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .result-text {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+            white-space: pre-wrap;
+            line-height: 1.8;
+            font-size: 1.1rem;
+        }
+
+        .action-btns { display: flex; gap: 10px; }
+
+        .btn-small {
+            background: white;
+            color: #28a745;
+            border: 2px solid white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .error-msg {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+            border-left: 4px solid #dc3545;
+        }
+        .error-msg.active { display: block; }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .feature {
+            text-align: center;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+        }
+
+        .feature-icon { font-size: 3rem; margin-bottom: 15px; }
+        .feature h3 { color: #2c3e50; margin-bottom: 10px; }
+        .feature p { color: #6c757d; font-size: 0.95rem; }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.8rem; }
+            .main-content { padding: 20px; }
+            .result-header { flex-direction: column; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 FastNaukriAlert AI</h1>
+            <p>Job, Admit Card, Result Articles ko Automatic Fetch & Rewrite Karein</p>
+        </div>
+
+        <div class="main-content">
+            <div class="input-group">
+                <label>🔗 Article URL</label>
+                <input type="url" id="url" placeholder="https://example.com/job-notification..." required>
+            </div>
+
+            <div class="input-group">
+                <label>📋 Article Type</label>
+                <select id="type">
+                    <option value="job">Latest Job / Recruitment</option>
+                    <option value="admit_card">Admit Card</option>
+                    <option value="result">Result</option>
+                    <option value="answer_key">Answer Key</option>
+                    <option value="syllabus">Syllabus</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>📝 Custom Format (Optional)</label>
+                <textarea id="customFormat" placeholder="Agar aapka specific format hai to yahan likhein..."></textarea>
+            </div>
+
+            <div style="text-align: center;">
+                <button class="btn" id="rewriteBtn" onclick="rewriteContent()">
+                    <span>✨ Rewrite Content</span>
+                </button>
+            </div>
+
+            <div class="error-msg" id="errorMsg"></div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <h3>Content Fetch & Rewrite Ho Raha Hai...</h3>
+                <p id="loadingText">URL se data fetch kiya ja raha hai...</p>
+            </div>
+
+            <div class="result-box" id="resultBox">
+                <div class="result-header">
+                    <span>✅ Rewritten Content</span>
+                    <div class="action-btns">
+                        <button class="btn-small" onclick="copyContent()">📋 Copy</button>
+                        <button class="btn-small" onclick="downloadContent()">💾 Download</button>
+                    </div>
+                </div>
+                <div class="result-content">
+                    <div class="result-text" id="resultText"></div>
+                </div>
+            </div>
+
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">🤖</div>
+                    <h3>AI Powered</h3>
+                    <p>Advanced AI se natural human-like content</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🇮🇳</div>
+                    <h3>Natural Hindi</h3>
+                    <p>Asli Hindi mein content, technical words English mein</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">📝</div>
+                    <h3>Plagiarism Free</h3>
+                    <p>100% unique content jo kisi bhi tool se pass hoga</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Fast Processing</h3>
+                    <p>Sirf kuch seconds mein ready hoga aapka content</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // AI CONTENT REWRITER - COMPLETE JAVASCRIPT
+        // ==========================================
+
+        // API Configuration - YAHAN APNA API KEY DALEIN
+        const API_KEY = 'YOUR_API_KEY_HERE'; // OpenAI ya Gemini API key
+        const USE_API = false; // API use karna hai toh true karein
+
+        async function rewriteContent() {
+            const url = document.getElementById('url').value;
+            const type = document.getElementById('type').value;
+            const customFormat = document.getElementById('customFormat').value;
+            
+            if (!url) {
+                showError('Please enter a valid URL');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('resultBox').classList.remove('active');
+            document.getElementById('errorMsg').classList.remove('active');
+            document.getElementById('rewriteBtn').disabled = true;
+
+            // Simulate progress
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 20;
+                if (progress === 40) {
+                    document.getElementById('loadingText').textContent = 'Content analyze kiya ja raha hai...';
+                } else if (progress === 80) {
+                    document.getElementById('loadingText').textContent = 'Hindi mein rewrite ho raha hai...';
+                }
+            }, 400);
+
+            try {
+                let content;
+                
+                if (USE_API && API_KEY !== 'YOUR_API_KEY_HERE') {
+                    // Real API call
+                    content = await fetchAndRewriteWithAI(url, type, customFormat);
+                } else {
+                    // Demo content generation
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    content = generateDemoContent(type, url);
+                }
+
+                document.getElementById('resultText').textContent = content;
+                document.getElementById('resultBox').classList.add('active');
+                
+            } catch (error) {
+                showError('Error: ' + error.message);
+            } finally {
+                clearInterval(progressInterval);
+                document.getElementById('loading').classList.remove('active');
+                document.getElementById('rewriteBtn').disabled = false;
+            }
+        }
+
+        async function fetchAndRewriteWithAI(url, type, customFormat) {
+            // Step 1: Fetch content from URL
+            const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+            const response = await fetch(proxyUrl);
+            const data = await response.json();
+            
+            if (!data.contents) {
+                throw new Error('Content fetch nahi ho paya');
+            }
+
+            // Step 2: Parse HTML
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(data.contents, 'text/html');
+            const textContent = doc.body.innerText.substring(0, 3000);
+
+            // Step 3: Call AI API (OpenAI example)
+            const prompt = createPrompt(textContent, type, customFormat);
+            
+            const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + API_KEY
+                },
+                body: JSON.stringify({
+                    model: 'gpt-3.5-turbo',
+                    messages: [{
+                        role: 'user',
+                        content: prompt
+                    }],
+                    temperature: 0.7,
+                    max_tokens: 2000
+                })
+            });
+
+            const aiData = await aiResponse.json();
+            return aiData.choices[0].message.content;
+        }
+
+        function createPrompt(content, type, customFormat) {
+            const typeNames = {
+                job: 'Latest Job / Recruitment',
+                admit_card: 'Admit Card Release',
+                result: 'Exam Result Declaration',
+                answer_key: 'Answer Key Release',
+                syllabus: 'Exam Syllabus & Pattern'
+            };
+
+            return `Aap ek professional content writer hain jo FastNaukriAlert website ke liye job-related articles likhte hain.
+
+Original Content: ${content}
+
+Article Type: ${typeNames[type] || 'Notification'}
+
+Instructions:
+1. Content ko natural, conversational Hindi mein rewrite karein (jaise ek real human likhta hai)
+2. Technical words jaise "Online Application", "Registration", "Admit Card", "Syllabus", "Exam Pattern", "Selection Process", "Qualification", "Vacancy", "Age Limit" ko English mein hi rakhein
+3. Content 100% unique aur plagiarism-free hona chahiye
+4. AI-generated na lage, bilkul human-written style mein ho
+5. Important information ko highlight karein (dates, fees, eligibility)
+6. Content engaging aur easy-to-read ho
+${customFormat ? '7. Custom Format follow karein: ' + customFormat : ''}
+
+Output sirf rewritten content hi hona chahiye, koi extra explanation nahi.`;
+        }
+
+        function generateDemoContent(type, url) {
+            const contents = {
+                job: `🚀 **SSC CGL 2024 Recruitment Notification – 7500+ Vacancies Out!**
+
+Hello doston! **FastNaukriAlert** mein aapka bahut-bahut swagat hai! 😊
+
+Aaj hum aapke liye lekar aaye hain **Staff Selection Commission (SSC)** ki taraf se nikali gayi sabse badi bharti ki khabar! Agar aap **Group B aur Group C** government posts ke liye apply karna chahte hain, toh yeh aapke liye golden opportunity hai.
+
+---
+
+## 📋 **Quick Overview**
+
+| Detail | Information |
+|--------|-------------|
+| **Recruitment Organization** | Staff Selection Commission (SSC) |
+| **Post Name** | Various Group B & C Posts |
+| **Total Vacancy** | 7500+ Expected |
+| **Application Mode** | Online through ssc.gov.in |
+| **Job Location** | All India |
+
+---
+
+## 📅 **Important Dates**
+
+| Event | Date |
+|-------|------|
+| **Online Application Start** | 11 June 2024 |
+| **Last Date to Apply** | 10 July 2024 |
+| **Last Date for Fee Payment** | 11 July 2024 |
+| **Tier 1 Exam Date** | September-October 2024 |
+
+⚠️ **Important:** Dates mein changes ho sakte hain, isliye official website par regularly check karte rahein!
+
+---
+
+## 💰 **Application Fee**
+
+| Category | Fee Amount |
+|----------|------------|
+| **General / OBC / EWS** | ₹100/- |
+| **SC / ST / PwD / Female** | Nil (Free) |
+
+**Payment Methods:** Debit Card, Credit Card, Net Banking, UPI
+
+---
+
+## 🎓 **Eligibility Criteria**
+
+### **Age Limit (as on 01-08-2024)**
+- **Minimum Age:** 18 Years
+- **Maximum Age:** 32 Years
+- **Age Relaxation:** OBC (3 years), SC/ST (5 years), PwD (10 years)
+
+### **Educational Qualification**
+- **Bachelor's Degree** from any recognized University
+
+---
+
+## 📝 **Selection Process**
+
+SSC CGL mein selection **3 stages** mein hota hai:
+
+1. **Tier 1:** Computer Based Test (Objective MCQs) - Qualifying Nature
+2. **Tier 2:** Computer Based Test (Objective + Descriptive)
+3. **Document Verification**
+
+---
+
+## 🖥️ **Online Application Kaise Karein?**
+
+**Step 1:** Official website par jayein 👉 ssc.gov.in
+
+**Step 2:** "Apply" section mein **"Combined Graduate Level Examination, 2024"** par click karein
+
+**Step 3:** **Registration** karein (Agar pehli baar apply kar rahe hain toh)
+
+**Step 4:** **Login** karein apne Registration ID se
+
+**Step 5:** **Application Form** bharein carefully
+
+**Step 6:** **Application Fee** pay karein (Agar applicable ho)
+
+**Step 7:** **Final Submit** karein aur **Printout** zarur nikaal lein
+
+💡 **Pro Tip:** Form bharte waqt details carefully check karein!
+
+---
+
+## 🔗 **Important Links**
+
+- **Official Notification:** [Download PDF](https://ssc.gov.in)
+- **Apply Online:** [Click Here](https://ssc.gov.in)
+- **Official Website:** [ssc.gov.in](https://ssc.gov.in)
+
+---
+
+## 💡 **Preparation Tips**
+
+- **Syllabus** ko ache se samajh lein
+- **Previous Year Papers** solve karein
+- **Current Affairs** regular padhein
+- **Mock Tests** dijiye online platforms par
+
+---
+
+## ❓ **Frequently Asked Questions**
+
+**Q1: Kya main 12th pass apply kar sakta hoon?**
+Ans: Nahi, SSC CGL ke liye minimum Bachelor's Degree required hai.
+
+**Q2: Final year student apply kar sakta hai?**
+Ans: Haan, agar aapki degree 01-08-2024 tak complete ho jayegi toh apply kar sakte hain.
+
+**Q3: Kya Tier 1 ke marks final selection mein count honge?**
+Ans: Nahi, Tier 1 sirf qualifying nature ka hai.
+
+---
+
+**Disclaimer:** Yeh information official sources se li gayi hai. Final decision SSC ka hoga.
+
+*Aise hi latest updates ke liye **FastNaukriAlert** ko bookmark karein!* 🔔
+
+**Best of Luck!** 🚀`,
+
+                admit_card: `🎫 **UPSC CDS II Admit Card 2024 Released – Download Karein!**
+
+Namaste doston! **FastNaukriAlert** mein aapka swagat hai. **Union Public Service Commission (UPSC)** ne **Combined Defence Services (CDS) II 2024** ke **Admit Cards** jaari kar diye hain!
+
+---
+
+## 📋 **Admit Card Details**
+
+| Information | Details |
+|-------------|---------|
+| **Organization** | Union Public Service Commission (UPSC) |
+| **Exam Name** | CDS II 2024 |
+| **Admit Card Release Date** | 18 October 2024 |
+| **Exam Date** | 1 November 2024 |
+
+---
+
+## ⏰ **Important Dates**
+
+- **Admit Card Download:** 18 October 2024 se available
+- **Exam Date:** 1 November 2024 (Sunday)
+- **Exam Time:** 9:00 AM to 11:00 AM (English) & 2:00 PM to 4:00 PM (GK & Maths)
+
+---
+
+## 📥 **Admit Card Kaise Download Karein?**
+
+**Step-by-Step Process:**
+
+1. **Official Website** par jayein: upsc.gov.in
+2. **"Download Admit Card"** link par click karein
+3. **CDS II 2024** select karein
+4. Apna **Registration ID** ya **Roll Number** enter karein
+5. **Date of Birth** enter karein
+6. **Captcha** fill karein
+7. **Submit** button click karein
+8. **Admit Card** download aur print kar lein
+
+---
+
+## ⚠️ **Exam Day Instructions**
+
+**Documents Carry Karein:**
+- ✅ Printed Admit Card
+- ✅ Valid Photo ID Proof (Aadhaar/PAN/Passport)
+- ✅ 2-3 Recent Passport Size Photographs
+- ✅ Ball Point Pen (Black/Blue)
+
+**Allowed Nahi Hai:**
+- ❌ Mobile Phone / Smartwatch
+- ❌ Calculator
+- ❌ Electronic Devices
+
+---
+
+**Best of Luck for Your Exam!** 🎉`,
+
+                result: `🏆 **IBPS PO Prelims Result 2024 Declared – Check Karein!**
+
+Hello aspirants! **FastNaukriAlert** par aapka swagat hai. **Institute of Banking Personnel Selection (IBPS)** ne **Probationary Officer (PO) Preliminary Examination 2024** ka **Result** jaari kar diya hai!
+
+---
+
+## 📊 **Result Overview**
+
+| Detail | Information |
+|--------|-------------|
+| **Organization** | Institute of Banking Personnel Selection (IBPS) |
+| **Post Name** | Probationary Officer (PO) |
+| **Result Date** | 1 November 2024 |
+| **Mains Exam Date** | 30 November 2024 |
+
+---
+
+## 🎯 **Expected Cut Off**
+
+| Category | Cut Off Marks |
+|----------|---------------|
+| General | 58-62 |
+| OBC | 55-59 |
+| SC | 50-54 |
+| ST | 45-49 |
+
+---
+
+## 📥 **Result Kaise Check Karein?**
+
+1. **Official Website** visit karein: ibps.in
+2. **"CRP PO/MT-XIV"** link par click karein
+3. **"Click Here to View Result"** par click karein
+4. Apna **Registration Number** enter karein
+5. **Password/Date of Birth** enter karein
+6. **Submit** button click karein
+
+---
+
+## 🎓 **Mains Exam Ke Liye Tips**
+
+**Exam Pattern:**
+- Reasoning & Computer Aptitude: 60 Marks
+- English Language: 40 Marks
+- Data Analysis: 60 Marks
+- General Awareness: 40 Marks
+- Descriptive Paper: 25 Marks
+
+**Preparation:**
+- Current Affairs last 6 months ki revise karein
+- Descriptive Writing practice karein
+- Mock Tests lagatar dein
+
+---
+
+**Congratulations to All Qualified Candidates!** 🎉
+
+*Latest banking job updates ke liye **FastNaukriAlert** ko follow karein!* 🔔`,
+
+                answer_key: `📝 **SSC CHSL 2024 Answer Key Released – Objection Window Open!**
+
+Namaste doston! **Staff Selection Commission (SSC)** ne **CHSL Tier 1 Exam** ki **Official Answer Key** jaari kar di hai!
+
+---
+
+## 📋 **Answer Key Details**
+
+| Information | Details |
+|-------------|---------|
+| **Organization** | Staff Selection Commission (SSC) |
+| **Exam Name** | CHSL Tier 1 2024 |
+| **Answer Key Release** | 5 November 2024 |
+| **Objection Window** | 5 Nov to 8 Nov 2024 |
+| **Objection Fee** | ₹100 per question |
+
+---
+
+## 🧮 **Score Kaise Calculate Karein?**
+
+**Marking Scheme:**
+- **Correct Answer:** +2 Marks
+- **Wrong Answer:** -0.50 Marks (Negative Marking)
+- **Unattempted:** 0 Marks
+
+**Example:**
+- 120 correct, 20 wrong
+- Score = (120 × 2) - (20 × 0.5) = 240 - 10 = **230 Marks**
+
+---
+
+## ⚠️ **Objection Kaise Raise Karein?**
+
+1. SSC portal par **Login** karein
+2. **"Challenge Answer Key"** select karein
+3. **Question ID** enter karein
+4. **Expected Answer** batayein
+5. **Supporting Document** upload karein
+6. **₹100 per question** fee pay karein
+
+---
+
+**Last Date 8 November hai, jaldi karein!** ⏰`,
+
+                syllabus: `📚 **RRB NTPC 2024 Syllabus & Exam Pattern – Complete Details**
+
+Hello friends! **FastNaukriAlert** par aapka swagat hai. **Railway Recruitment Board (RRB)** ki **NTPC** 2024 exam ki complete syllabus!
+
+---
+
+## 🎯 **Exam Pattern**
+
+### **CBT 1 (Prelims)**
+| Subject | Questions | Marks |
+|---------|-----------|-------|
+| General Awareness | 40 | 40 |
+| Mathematics | 30 | 30 |
+| Reasoning | 30 | 30 |
+| **Total** | **100** | **100** |
+
+### **CBT 2 (Mains)**
+| Subject | Questions | Marks |
+|---------|-----------|-------|
+| General Awareness | 50 | 50 |
+| Mathematics | 35 | 35 |
+| Reasoning | 35 | 35 |
+| **Total** | **120** | **120** |
+
+---
+
+## 📖 **Detailed Syllabus**
+
+### **General Awareness**
+- Current Affairs (6-8 months)
+- Indian History (Ancient, Medieval, Modern)
+- Geography (Indian & World)
+- Indian Polity & Constitution
+- Economy & Budget
+- Science & Technology
+
+### **Mathematics**
+- Number System, Simplification
+- Percentage, Profit & Loss
+- Simple & Compound Interest
+- Ratio & Proportion
+- Time & Work, Time & Distance
+- Data Interpretation
+
+### **Reasoning**
+- Analogy, Classification
+- Series Completion
+- Coding-Decoding
+- Blood Relations
+- Direction Sense
+- Syllogism
+
+---
+
+## 📚 **Best Books**
+
+| Subject | Books |
+|---------|-------|
+| GK | Lucent's GK, Arihant GK |
+| Maths | R.S. Aggarwal, Rakesh Yadav |
+| Reasoning | R.S. Aggarwal Reasoning |
+
+---
+
+**Best of Luck!** 🎯`
+            };
+
+            return contents[type] || contents.job;
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMsg');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('active');
+        }
+
+        function copyContent() {
+            const content = document.getElementById('resultText').textContent;
+            navigator.clipboard.writeText(content).then(() => {
+                alert('Content copied to clipboard! ✅');
+            });
+        }
+
+        function downloadContent() {
+            const content = document.getElementById('resultText').textContent;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'fastnaukri-article-' + new Date().getTime() + '.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Enter key support
+        document.getElementById('url').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                rewriteContent();
+            }
+        });
+    </script>
+</body>
+</html>
